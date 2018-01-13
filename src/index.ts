@@ -114,10 +114,10 @@ const sourceEx = new Binance();
         console.table(`${sourceEx.name} vs ${targetEx.name}`, compareResult.map(cr => ({
             
             sourceFrom: sourceColor(cr.sourceFrom),
-            '買入': sourceColor(cr.sourcePrice.toString()),
+            'buy': sourceColor(cr.sourcePrice.toString()),
             sourceTo: sourceColor(cr.sourceTo),
             targetFrom: targetColor(cr.targetFrom),
-            '賣出': targetColor(cr.targetPrice.toString()),
+            'sell': targetColor(cr.targetPrice.toString()),
             targetTo: targetColor(cr.targetTo),
             pct: colors.black(colors.bgWhite(`${(cr.markUpPct * 100).toFixed(2)}%`))
         })));
