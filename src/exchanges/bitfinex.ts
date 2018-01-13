@@ -1,11 +1,14 @@
 import { default as Exchanges, Price, Pair } from './exchanges';
 import * as BFX from 'bitfinex-api-node';
+import { retry } from 'async';
 
 export default class Bitfinex extends Exchanges {
 
+    public name: string = 'Bitfinex';
     private bfx: any;
-    private trickers: any = {};
-    private symbolLastTick: any = {};
+    private tricker: any;
+    private lastTicker: any = {};
+    private allSymbols: string[];
 
     constructor() {
         super();
@@ -24,98 +27,88 @@ export default class Bitfinex extends Exchanges {
     }
 
 
-    getAssetList(baseAsset: string): Promise<Pair[]> {
+    getSupportedAssets(baseAsset: string): Promise<Pair[]> {
         const ba = baseAsset.toUpperCase();
         return new Promise((resolve, reject) => {
-            this.bfx.rest(2).symbols((err: Error, symbols: any) => {
+            resolve(this.allSymbols
+                .map((s: string) => ({
+                    baseAsset: s.substr(0, 3).toUpperCase(),
+                    quoteAsset: s.substr(3).toUpperCase()
+                }))
+                .filter((p: Pair) => {
+                    return p.baseAsset === ba || p.quoteAsset === ba;
+                })
+            );
+        });
+    }
+
+    _getAllSymbols(cb: Function) {
+        this.bfx.rest(2).symbols((err: Error, symbols: any) => {
+            if (err) {
+                throw err;
+            }
+            cb(symbols);
+        })
+    }
+
+    init(): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this._getAllSymbols((allSymbols: string[]) => {
+                this.allSymbols = allSymbols;
+                const ws = this.bfx.ws(1);
+
+                ws.on('open', () => {
+                    allSymbols.forEach(s => {
+                        ws.subscribeTicker(`${s.toUpperCase()}`);
+                    });
+                });
+
+                ws.on('ticker', (pair: string, data: any) => {
+                    this.lastTicker[pair] = data;
+                });
+
+                ws.on('error', console.error);
+                ws.once('ticker', () => {
+                    this.tricker = ws;
+                    resolve();
+                });
+                ws.open();
+            });
+        });
+
+    }
+    getPrice(baseAsset: string, quoteAsset: string): Promise<Price> {
+        const symbol = `${baseAsset.toUpperCase()}${quoteAsset.toUpperCase()}`;
+
+        return new Promise((resolve, reject) => {
+
+
+            retry({
+                times: 10,
+                interval: 1000,
+            }, async (cb: Function) => {
+
+                const tick = this.lastTicker[symbol];
+                if (tick !== undefined) {
+                    return {
+                        baseAsset: baseAsset,
+                        quoteAsset: quoteAsset,
+                        buyPrice: tick.ask,
+                        sellPrice: tick.bid
+                    };
+                } else {
+                    throw new Error('not found');
+                }
+            }, (err, result) => {
                 if (err) {
                     reject(err);
-                    return;
+                } else {
+                    resolve(result);
                 }
-
-                resolve(symbols
-                    .map((s: string) => ({
-                        baseAsset: s.substr(0, 3).toUpperCase(),
-                        quoteAsset: s.substr(3).toUpperCase()
-                    }))
-                    .filter((p: Pair) => {
-                        return p.baseAsset === ba || p.quoteAsset === ba;
-                    })
-                );
-            })
-        });
-    }
-
-    private initTricker(symbol: string, cb: Function) {
-        const ws = this.bfx.ws(2);
-
-        ws.on('open', () => {
-            ws.subscribeTicker('t' + symbol);
-
-        });
-
-        ws.on('message', (data: any[]) => {
-            if (data.map !== undefined && data[1].map !== undefined) {
-                this.symbolLastTick[symbol] = data[1];
-                this.trickers[symbol] = ws;
-                cb();
-            }
-        });
-        ws.on('error', console.error);
-
-        ws.open();
-
-    }
-
-    getAskPrice(sell: string, buy: string): Promise<Price> {
-        const symbol = `${sell.toUpperCase()}${buy.toUpperCase()}`;
-        const resovled = (resvole: Function) => {
-            const tick = this.symbolLastTick[symbol];
-
-            resvole({
-                priceInCrypto: tick[0],
-                priceInUsd: 0//TODO
             });
 
-        }
-        return new Promise((resvole, reject) => {
-
-
-            if (this.trickers[symbol] === undefined) {
-
-                this.initTricker(symbol, () => {
-                    resovled(resvole);
-                })
-            } else {
-
-                resovled(resvole)
-            }
-
-        });
-
-
-    }
-    getBidPrice(buy: string, sell: string): Promise<Price> {
-        const symbol = `${sell.toUpperCase()}${buy.toUpperCase()}`;
-        const resovled = (resvole: Function) => {
-            const tick = this.symbolLastTick[symbol];
-            resvole({
-                priceInCrypto: tick[2],
-                priceInUsd: 0//TODO
-            });
-
-        }
-        return new Promise((resvole, reject) => {
-
-            if (this.trickers[symbol] === undefined) {
-                this.initTricker(symbol, () => {
-                    resovled(resvole);
-                })
-            } else {
-                resovled(resvole)
-            }
-
         });
     }
+
 
 }

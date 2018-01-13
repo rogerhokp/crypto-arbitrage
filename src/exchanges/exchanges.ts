@@ -1,17 +1,15 @@
 export default abstract class Exchanges {
 
-
-    abstract getAskPrice(sell: string, buy: string): Promise<Price>
-
-    abstract getBidPrice(sell: string, buy: string): Promise<Price>
-
-    abstract getAssetList(baseAsset: string): Promise<Pair[]>
+    abstract init(): Promise<any>
+    abstract getPrice(sell: string, buy: string): Promise<Price>
+    abstract getSupportedAssets(baseAsset?: string): Promise<Pair[]>
 }
 
 export interface Price {
-    priceInCrypto: number;
-    priceInUsd: number;
-
+    baseAsset: string;
+    quoteAsset: string;
+    buyPrice: number;
+    sellPrice: number;
 }
 
 export interface Pair {
