@@ -27,7 +27,7 @@ export default class Bitfinex extends Exchanges {
     }
 
 
-    getSupportedAssets(baseAsset: string): Promise<Pair[]> {
+    getSupportedAssets(baseAsset?: string): Promise<Pair[]> {
         const ba = baseAsset.toUpperCase();
         return new Promise((resolve, reject) => {
             resolve(this.allSymbols
@@ -36,6 +36,9 @@ export default class Bitfinex extends Exchanges {
                     quoteAsset: s.substr(3).toUpperCase()
                 }))
                 .filter((p: Pair) => {
+                    if (baseAsset === undefined) {
+                        return true;
+                    }
                     return p.baseAsset === ba || p.quoteAsset === ba;
                 })
             );
@@ -84,7 +87,7 @@ export default class Bitfinex extends Exchanges {
 
 
             retry({
-                times: 10,
+                times: 99,
                 interval: 1000,
             }, async (cb: Function) => {
 

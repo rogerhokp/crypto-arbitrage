@@ -13,6 +13,7 @@
     "async": "^2.6.0",
     "binance": "^1.2.0",
     "bitfinex-api-node": "^2.0.0-beta",
+    "cexio-api-node": "^1.1.0",
     "colors": "^1.1.2",
     "console.table": "^0.9.1",
     "i": "^0.3.6",

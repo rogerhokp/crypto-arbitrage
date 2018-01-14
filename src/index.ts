@@ -1,19 +1,17 @@
 ///<reference path="./index.d.ts" />
 import Binance from './exchanges/binance';
 import Bitfinex from './exchanges/bitfinex';
+import Cexio from './exchanges/cexio';
 import * as _ from 'lodash';
 import * as colors from 'colors';
 import { Price, Pair } from './exchanges/exchanges';
 import 'console.table';
 
 const baseAsset = 'eth';
-const exchanges = ['binance', 'cexio'];
 
-const targetEx = new Bitfinex();
 const sourceEx = new Binance();
+const targetEx = new Cexio();
 
-
-//BINANCE -> BITFINEX
 (async () => {
     try {
         await sourceEx.init();
@@ -25,20 +23,21 @@ const sourceEx = new Binance();
         //TODO move inside and loop
         await targetEx.init();
         const targetExSupportedAssets = await targetEx.getSupportedAssets(baseAsset);
+
         const targetExPriceList = await Promise.all(
             targetExSupportedAssets.map((asset: Pair) => targetEx.getPrice(asset.baseAsset, asset.quoteAsset))
         );
 
-        const bitfinexPriceGroupByBaseAsset = _.groupBy(targetExPriceList, p => p.baseAsset);
-        const bitfinexPriceGroupByQuoteAsset = _.groupBy(targetExPriceList, p => p.quoteAsset);
+        const targetExPriceGroupByBaseAsset = _.groupBy(targetExPriceList, p => p.baseAsset);
+        const targetExPriceGroupByQuoteAsset = _.groupBy(targetExPriceList, p => p.quoteAsset);
         const compareResult: ComparePair[] = [];
 
 
 
         sourceExPriceList.forEach(sourcePrice => {
 
-            if (bitfinexPriceGroupByBaseAsset[sourcePrice.quoteAsset] !== undefined) {
-                bitfinexPriceGroupByBaseAsset[sourcePrice.quoteAsset].forEach(targetPrice => {
+            if (targetExPriceGroupByBaseAsset[sourcePrice.quoteAsset] !== undefined) {
+                targetExPriceGroupByBaseAsset[sourcePrice.quoteAsset].forEach(targetPrice => {
                     if (sourcePrice.baseAsset === targetPrice.quoteAsset) {
                         compareResult.push({
                             sourceFrom: sourcePrice.baseAsset,
@@ -54,8 +53,8 @@ const sourceEx = new Binance();
                 });
             }
 
-            if (bitfinexPriceGroupByBaseAsset[sourcePrice.baseAsset] !== undefined) {
-                bitfinexPriceGroupByBaseAsset[sourcePrice.baseAsset].forEach(targetPrice => {
+            if (targetExPriceGroupByBaseAsset[sourcePrice.baseAsset] !== undefined) {
+                targetExPriceGroupByBaseAsset[sourcePrice.baseAsset].forEach(targetPrice => {
                     if (sourcePrice.quoteAsset === targetPrice.quoteAsset) {
 
                         compareResult.push({
@@ -72,8 +71,8 @@ const sourceEx = new Binance();
                 });
             }
 
-            if (bitfinexPriceGroupByQuoteAsset[sourcePrice.quoteAsset] !== undefined) {
-                bitfinexPriceGroupByQuoteAsset[sourcePrice.quoteAsset].forEach(targetPrice => {
+            if (targetExPriceGroupByQuoteAsset[sourcePrice.quoteAsset] !== undefined) {
+                targetExPriceGroupByQuoteAsset[sourcePrice.quoteAsset].forEach(targetPrice => {
                     if (sourcePrice.baseAsset === targetPrice.baseAsset) {
                         compareResult.push({
                             sourceFrom: sourcePrice.baseAsset,
@@ -89,8 +88,8 @@ const sourceEx = new Binance();
                 });
             }
 
-            if (bitfinexPriceGroupByQuoteAsset[sourcePrice.baseAsset] !== undefined) {
-                bitfinexPriceGroupByQuoteAsset[sourcePrice.baseAsset].forEach(targetPrice => {
+            if (targetExPriceGroupByQuoteAsset[sourcePrice.baseAsset] !== undefined) {
+                targetExPriceGroupByQuoteAsset[sourcePrice.baseAsset].forEach(targetPrice => {
                     if (sourcePrice.quoteAsset === targetPrice.baseAsset) {
 
                         compareResult.push({
