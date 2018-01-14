@@ -1,76 +1,58 @@
-///<reference path="./bitfinex.d.ts" />
-import { default as Exchanges, Price, Pair } from './exchanges';
-import * as BFX from 'bitfinex-api-node';
-import { retry } from 'async';
-
-export default class Bitfinex extends Exchanges {
-
-    public name: string = 'Bitfinex';
-    private bfx: any;
-    private tricker: any;
-    private lastTicker: any = {};
-    private allSymbols: string[];
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const exchanges_1 = require("./exchanges");
+const BFX = require("bitfinex-api-node");
+const async_1 = require("async");
+class Bitfinex extends exchanges_1.default {
     constructor() {
         super();
+        this.name = 'Bitfinex';
+        this.lastTicker = {};
         this.bfx = new BFX({
-            // apiKey: '...',
-            // apiSecret: '...',
-
             ws: {
                 autoReconnect: true,
                 seqAudit: true,
                 packetWDDelay: 10 * 1000
             }
-        })
-
-
+        });
     }
-
-
-    getSupportedAssets(baseAsset?: string): Promise<Pair[]> {
+    getSupportedAssets(baseAsset) {
         const ba = baseAsset.toUpperCase();
         return new Promise((resolve, reject) => {
             resolve(this.allSymbols
-                .map((s: string) => ({
-                    baseAsset: s.substr(0, 3).toUpperCase(),
-                    quoteAsset: s.substr(3).toUpperCase()
-                }))
-                .filter((p: Pair) => {
-                    if (baseAsset === undefined) {
-                        return true;
-                    }
-                    return p.baseAsset === ba || p.quoteAsset === ba;
-                })
-            );
+                .map((s) => ({
+                baseAsset: s.substr(0, 3).toUpperCase(),
+                quoteAsset: s.substr(3).toUpperCase()
+            }))
+                .filter((p) => {
+                if (baseAsset === undefined) {
+                    return true;
+                }
+                return p.baseAsset === ba || p.quoteAsset === ba;
+            }));
         });
     }
-
-    _getAllSymbols(cb: Function) {
-        this.bfx.rest(2).symbols((err: Error, symbols: any) => {
+    _getAllSymbols(cb) {
+        this.bfx.rest(2).symbols((err, symbols) => {
             if (err) {
                 throw err;
             }
             cb(symbols);
-        })
+        });
     }
-
-    init(): Promise<any> {
+    init() {
         return new Promise((resolve, reject) => {
-            this._getAllSymbols((allSymbols: string[]) => {
+            this._getAllSymbols((allSymbols) => {
                 this.allSymbols = allSymbols;
                 const ws = this.bfx.ws(1);
-
                 ws.on('open', () => {
                     allSymbols.forEach(s => {
                         ws.subscribeTicker(`${s.toUpperCase()}`);
                     });
                 });
-
-                ws.on('ticker', (pair: string, data: any) => {
+                ws.on('ticker', (pair, data) => {
                     this.lastTicker[pair] = data;
                 });
-
                 ws.on('error', console.error);
                 ws.once('ticker', () => {
                     this.tricker = ws;
@@ -79,19 +61,14 @@ export default class Bitfinex extends Exchanges {
                 ws.open();
             });
         });
-
     }
-    getPrice(baseAsset: string, quoteAsset: string): Promise<Price> {
+    getPrice(baseAsset, quoteAsset) {
         const symbol = `${baseAsset.toUpperCase()}${quoteAsset.toUpperCase()}`;
-
         return new Promise((resolve, reject) => {
-
-
-            retry({
+            async_1.retry({
                 times: 99,
                 interval: 1000,
-            }, async (cb: Function) => {
-
+            }, async (cb) => {
                 const tick = this.lastTicker[symbol];
                 if (tick !== undefined) {
                     return {
@@ -100,19 +77,20 @@ export default class Bitfinex extends Exchanges {
                         buyPrice: tick.ask,
                         sellPrice: tick.bid
                     };
-                } else {
+                }
+                else {
                     throw new Error('not found');
                 }
             }, (err, result) => {
                 if (err) {
                     reject(err);
-                } else {
+                }
+                else {
                     resolve(result);
                 }
             });
-
         });
     }
-
-
 }
+exports.default = Bitfinex;
+//# sourceMappingURL=bitfinex.js.map

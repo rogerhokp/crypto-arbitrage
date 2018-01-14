@@ -1,17 +1,13 @@
-///<reference path="./binance.d.ts"/>
-import { default as Exchanges, Price, Pair } from './exchanges';
-import * as binance from 'binance';
-import { retry } from 'async';
-
-export default class Binance extends Exchanges {
-    public name: string = 'Binance';
-    private ws: any;
-    private rest: any;
-    private ticker: any;
-    private lastTicker: any = {};
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const exchanges_1 = require("./exchanges");
+const binance = require("binance");
+const async_1 = require("async");
+class Binance extends exchanges_1.default {
     constructor() {
         super();
+        this.name = 'Binance';
+        this.lastTicker = {};
         this.ws = new binance.BinanceWS({});
         this.rest = new binance.BinanceRest({
             key: 'api-key',
@@ -21,10 +17,9 @@ export default class Binance extends Exchanges {
             disableBeautification: false
         });
     }
-
-    init(): Promise<any> {
+    init() {
         return new Promise((resolve, reject) => {
-            const ticker = this.ws.onAllTickers((data: any[]) => {
+            const ticker = this.ws.onAllTickers((data) => {
                 if (data !== undefined) {
                     this.ticker = ticker;
                     data.forEach(d => {
@@ -32,50 +27,34 @@ export default class Binance extends Exchanges {
                     });
                     resolve();
                 }
-            })
+            });
         });
     }
-
-
-    getSupportedAssets(baseAsset?: string): Promise<Pair[]> {
-
+    getSupportedAssets(baseAsset) {
         return new Promise((resolve, reject) => {
-            this.rest.exchangeInfo((err: Error, data: any) => {
+            this.rest.exchangeInfo((err, data) => {
                 if (err) {
                     reject(err);
                     return;
                 }
-
                 let symbols = data.symbols;
-
                 if (baseAsset !== undefined) {
                     const ba = baseAsset.toUpperCase();
                     symbols = symbols
-                        .filter((s: any) => (s.baseAsset === ba || s.quoteAsset === ba));
+                        .filter((s) => (s.baseAsset === ba || s.quoteAsset === ba));
                 }
-
-                resolve(
-                    symbols.map((s: any) => ({ baseAsset: s.baseAsset, quoteAsset: s.quoteAsset }))
-                );
-
+                resolve(symbols.map((s) => ({ baseAsset: s.baseAsset, quoteAsset: s.quoteAsset })));
             });
         });
     }
-
-
-    getPrice(baseAsset: string, quoteAsset: string): Promise<Price> {
+    getPrice(baseAsset, quoteAsset) {
         const symbol = `${baseAsset.toUpperCase()}${quoteAsset.toUpperCase()}`;
-
         return new Promise((resolve, reject) => {
-
-
-            retry({
+            async_1.retry({
                 times: 99,
                 interval: 1000,
-            }, async (cb: Function) => {
-
+            }, async (cb) => {
                 const tick = this.lastTicker[symbol];
-
                 if (tick !== undefined) {
                     return {
                         baseAsset: baseAsset,
@@ -83,21 +62,20 @@ export default class Binance extends Exchanges {
                         buyPrice: tick.bestAskPrice,
                         sellPrice: tick.bestBid
                     };
-                } else {
+                }
+                else {
                     throw new Error('not found');
                 }
             }, (err, result) => {
                 if (err) {
                     reject(err);
-                } else {
+                }
+                else {
                     resolve(result);
                 }
             });
-
-
         });
-
-
     }
-
 }
+exports.default = Binance;
+//# sourceMappingURL=binance.js.map

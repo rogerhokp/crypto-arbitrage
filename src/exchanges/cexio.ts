@@ -1,3 +1,4 @@
+///<reference path="./cexio.d.ts" />
 import { default as Exchanges, Price, Pair } from './exchanges';
 import * as CEXIO from 'cexio-api-node';
 import { retry } from 'async';
@@ -49,27 +50,27 @@ export default class Cexio extends Exchanges {
 
     init(): Promise<any> {
         return Promise.resolve();
-        return new Promise((resolve, reject) => {
+        // return new Promise((resolve, reject) => {
 
 
-            const ws = new CEXIO('', '').ws;
+        //     const ws = new CEXIO('', '').ws;
 
-            ws.on('open', () => {
-                ws.subscribeTicker();
-            });
+        //     ws.on('open', () => {
+        //         ws.subscribeTicker();
+        //     });
 
-            ws.on('ticker', (resp: any) => {
-                const symbol = resp.data.pair.replace(':', '');
-                this.lastTicker[symbol] = resp.data;
-            });
+        //     ws.on('ticker', (resp: any) => {
+        //         const symbol = resp.data.pair.replace(':', '');
+        //         this.lastTicker[symbol] = resp.data;
+        //     });
 
-            ws.on('error', console.error);
-            ws.once('ticker', () => {
-                resolve();
-            });
-            ws.open();
+        //     ws.on('error', console.error);
+        //     ws.once('ticker', () => {
+        //         resolve();
+        //     });
+        //     ws.open();
 
-        });
+        // });
 
     }
 
@@ -77,7 +78,7 @@ export default class Cexio extends Exchanges {
     _restGetTicker(symbol: string): Promise<any> {
         return new Promise((resolve, reject) => {
 
-            const ticker = new CEXIO().rest.ticker(symbol, (err:Error, data: any) => {
+            const ticker = new CEXIO().rest.ticker(symbol, (err: Error, data: any) => {
                 if (!err && data !== undefined && data !== null) {
                     resolve(data);
                 } else {
@@ -104,7 +105,7 @@ export default class Cexio extends Exchanges {
                         sellPrice: ticker.bid
                     };
                 } catch (e) {
-                    
+
                     try {
                         const ticker = await this._restGetTicker(`${quoteAsset.toUpperCase()}/${baseAsset.toUpperCase()}`);
                         return {
