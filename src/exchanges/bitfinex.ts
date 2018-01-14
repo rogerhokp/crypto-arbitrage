@@ -2,13 +2,14 @@
 import { default as Exchanges, Price, Pair } from './exchanges';
 import * as BFX from 'bitfinex-api-node';
 import { retry } from 'async';
+import * as _ from 'lodash';
 
 export default class Bitfinex extends Exchanges {
 
     public name: string = 'Bitfinex';
     private bfx: any;
-    private tricker: any;
-    private lastTicker: any = {};
+    private trades: any;
+    private lastTrades: any = {};
     private allSymbols: string[];
 
     constructor() {
@@ -63,17 +64,23 @@ export default class Bitfinex extends Exchanges {
 
                 ws.on('open', () => {
                     allSymbols.forEach(s => {
-                        ws.subscribeTicker(`${s.toUpperCase()}`);
+                        ws.subscribeTrades(`${s.toUpperCase()}`);
                     });
                 });
 
-                ws.on('ticker', (pair: string, data: any) => {
-                    this.lastTicker[pair] = data;
+
+                ws.on('trade', (pair: string, data: any) => {
+                    if (_.isArray(data)) {
+                        this.lastTrades[pair] = data[0];
+                    } else {
+                        this.lastTrades[pair] = data;
+                    }
+
                 });
 
                 ws.on('error', console.error);
-                ws.once('ticker', () => {
-                    this.tricker = ws;
+                ws.once('trade', () => {
+                    this.trades = ws;
                     resolve();
                 });
                 ws.open();
@@ -85,23 +92,21 @@ export default class Bitfinex extends Exchanges {
         const symbol = `${baseAsset.toUpperCase()}${quoteAsset.toUpperCase()}`;
 
         return new Promise((resolve, reject) => {
-
-
             retry({
                 times: 99,
                 interval: 1000,
             }, async (cb: Function) => {
 
-                const tick = this.lastTicker[symbol];
-                if (tick !== undefined) {
+                const trade = this.lastTrades[symbol];
+                if (trade !== undefined) {
                     return {
                         baseAsset: baseAsset,
                         quoteAsset: quoteAsset,
-                        buyPrice: tick.ask,
-                        sellPrice: tick.bid
+                        buyPrice: trade.price,
+                        sellPrice: trade.price
                     };
                 } else {
-                    throw new Error('not found');
+                    throw new Error(symbol + ' not found');
                 }
             }, (err, result) => {
                 if (err) {

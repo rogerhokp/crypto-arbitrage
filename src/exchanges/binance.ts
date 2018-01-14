@@ -7,7 +7,7 @@ export default class Binance extends Exchanges {
     public name: string = 'Binance';
     private ws: any;
     private rest: any;
-    private ticker: any;
+    private trade: any;
     private lastTicker: any = {};
 
     constructor() {
@@ -24,9 +24,9 @@ export default class Binance extends Exchanges {
 
     init(): Promise<any> {
         return new Promise((resolve, reject) => {
-            const ticker = this.ws.onAllTickers((data: any[]) => {
+            const ticker = this.ws.onAllTickers((data: any[]) => {//TODO change to trades
                 if (data !== undefined) {
-                    this.ticker = ticker;
+                    this.trade = ticker;
                     data.forEach(d => {
                         this.lastTicker[d.symbol] = d;
                     });

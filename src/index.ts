@@ -11,7 +11,7 @@ import { setInterval } from 'timers';
 const baseAsset = 'ETH';
 
 const sourceEx = new Binance();
-const targetEx = new Bitfinex();
+const targetEx = new Cexio();
 
 let sourceExSupportedAssets: Pair[];
 let targetExSupportedAssets: Pair[];

@@ -96,7 +96,7 @@ export default class Cexio extends Exchanges {
                 interval: 1000,
             }, async () => {
                 try {
-                    const ticker = await this._restGetTicker(`${baseAsset.toUpperCase()}/${quoteAsset.toUpperCase()}`);
+                    const ticker = await this._restGetTicker(`${baseAsset.toUpperCase()}/${quoteAsset.toUpperCase()}`);//TODO check to get trades
 
                     return {
                         baseAsset: baseAsset,

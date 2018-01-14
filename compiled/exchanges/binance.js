@@ -21,7 +21,7 @@ class Binance extends exchanges_1.default {
         return new Promise((resolve, reject) => {
             const ticker = this.ws.onAllTickers((data) => {
                 if (data !== undefined) {
-                    this.ticker = ticker;
+                    this.trade = ticker;
                     data.forEach(d => {
                         this.lastTicker[d.symbol] = d;
                     });
